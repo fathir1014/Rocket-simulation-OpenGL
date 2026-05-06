@@ -12,6 +12,7 @@ from render import (
     draw_particles,
     spawn_engine_particles,
     spawn_cooling_particles,
+    spawn_ignition_puffs,
     draw_hud,
 )
 
@@ -29,11 +30,12 @@ def main():
     rocket = Rocket()
 
     camera_angle = 34.0
-    camera_distance = 38.0
+    camera_distance = 44.0
 
     running = True
     while running:
         dt = clock.tick(60) / 1000.0
+        dt = min(dt, 1.0 / 30.0)
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -49,21 +51,31 @@ def main():
 
         keys = pygame.key.get_pressed()
         if keys[K_a]:
-            camera_angle -= 45 * dt
+            camera_angle -= 55 * dt
         if keys[K_d]:
-            camera_angle += 45 * dt
+            camera_angle += 55 * dt
         if keys[K_w]:
-            camera_distance = max(20, camera_distance - 18 * dt)
+            camera_distance = max(22, camera_distance - 22 * dt)
         if keys[K_s]:
-            camera_distance = min(75, camera_distance + 18 * dt)
+            camera_distance = min(95, camera_distance + 22 * dt)
 
         rocket.update(dt)
 
-        if rocket.engine_on:
-            spawn_engine_particles(rocket.altitude, rocket.phase)
-
+        # Particles (lebih realistis: chilldown / ignition / ascent / landing)
         if rocket.cooling:
-            spawn_cooling_particles()
+            spawn_cooling_particles(rocket.altitude, rocket.phase, rocket.time)
+
+        if rocket.phase == "IGNITION":
+            spawn_ignition_puffs(rocket.altitude, rocket.time)
+
+        if rocket.engine_on:
+            spawn_engine_particles(
+                rocket.altitude,
+                rocket.phase,
+                rocket.throttle,
+                rocket.velocity,
+                rocket.time,
+            )
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
@@ -71,22 +83,25 @@ def main():
         angle = math.radians(camera_angle)
         cam_x = math.sin(angle) * camera_distance
         cam_z = math.cos(angle) * camera_distance
-        cam_y = max(14, rocket.altitude * 0.48 + 15)
+
+        # kamera naik pelan ngikutin rocket, tapi tetep cinematic
+        cam_y = max(16, rocket.altitude * 0.42 + 17)
 
         gluLookAt(
             cam_x, cam_y, cam_z,
-            0, rocket.altitude + 4, 0,
+            0, rocket.altitude + 5.0, 0,
             0, 1, 0
         )
 
-        draw_world(rocket.time)
-        draw_rocket(rocket.altitude, rocket.engine_on, rocket.phase)
+        draw_world(rocket.time, rocket.phase, rocket.altitude)
+        draw_rocket(rocket.altitude, rocket.engine_on, rocket.phase, rocket.throttle, rocket.time)
         draw_particles(dt)
         draw_hud(WIDTH, HEIGHT, rocket)
 
         pygame.display.set_caption(
-            f"Rocket Launch Simulation | {rocket.phase} | "
-            f"Altitude {rocket.altitude:.1f} m | Fuel {rocket.fuel:.1f} kg"
+            f"Rocket Sim | {rocket.phase} | "
+            f"Alt {rocket.altitude:.1f} m | V {rocket.velocity:.1f} m/s | "
+            f"Fuel {rocket.fuel:.1f} kg | Throttle {rocket.throttle:.2f}"
         )
 
         pygame.display.flip()
