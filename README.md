@@ -15,3 +15,7 @@ Simulasi peluncuran roket sederhana pakai Python + OpenGL.
 ```bash
 pip install -r requirements.txt
 python main.py
+
+## Update Project
+git pull origin main
+pip install -r requirements.txt
