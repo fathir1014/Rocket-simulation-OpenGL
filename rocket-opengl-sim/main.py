@@ -44,6 +44,13 @@ def main():
             if event.type == KEYDOWN:
                 if event.key == K_SPACE:
                     rocket.launch()
+                elif event.key == K_f:
+                    # F: tambah 20 kg (cuma kalau di ground)
+                    # Shift+F: full tank
+                    if pygame.key.get_mods() & KMOD_SHIFT:
+                        rocket.refuel(full=True)
+                    else:
+                        rocket.refuel(amount=20.0)
                 elif event.key == K_r:
                     rocket = Rocket()
                 elif event.key == K_ESCAPE:
@@ -61,7 +68,6 @@ def main():
 
         rocket.update(dt)
 
-        # Particles (lebih realistis: chilldown / ignition / ascent / landing)
         if rocket.cooling:
             spawn_cooling_particles(rocket.altitude, rocket.phase, rocket.time)
 
@@ -83,8 +89,6 @@ def main():
         angle = math.radians(camera_angle)
         cam_x = math.sin(angle) * camera_distance
         cam_z = math.cos(angle) * camera_distance
-
-        # kamera naik pelan ngikutin rocket, tapi tetep cinematic
         cam_y = max(16, rocket.altitude * 0.42 + 17)
 
         gluLookAt(
